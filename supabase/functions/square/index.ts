@@ -183,6 +183,40 @@ Deno.serve(async (req: Request) => {
         .update({ deposit_paid: true, status: 'confirmed' })
         .eq('id', appointment_id)
 
+      // Internal booking push. This is deliberately non-blocking: a notification
+      // failure must never turn a successful Square payment into a failed checkout.
+      try {
+        const { data: booking } = await supabase.from('appointments')
+          .select('id, deposit_amount, customer:customers(first_name), vehicle:vehicles(year, make, model), services(name)')
+          .eq('id', appointment_id)
+          .maybeSingle()
+
+        const vehicle = booking?.vehicle
+          ? `${booking.vehicle.year} ${booking.vehicle.make} ${booking.vehicle.model}`
+          : 'Vehicle'
+        const services = (booking?.services || []).map((service: any) => service.name).join(', ') || 'Service'
+        const deposit = ((booking?.deposit_amount ?? amount) / 100).toFixed(2)
+        const adminUrl = `${Deno.env.get('SITE_URL') || 'https://carsbylondon.com'}/admin?booking=${encodeURIComponent(appointment_id)}`
+
+        const ntfyRes = await fetch('https://ntfy.sh/london-tint-bookings-site', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'text/plain; charset=utf-8',
+            'Title': 'New London Booking',
+            'Priority': 'high',
+            'Tags': 'car',
+            'Click': adminUrl,
+          },
+          body: `${vehicle}\n${services}\nDeposit: ${deposit} PAID ✓\nTap to view booking`,
+        })
+
+        if (!ntfyRes.ok) {
+          console.error('ntfy booking notification failed', ntfyRes.status, await ntfyRes.text())
+        }
+      } catch (notifyError) {
+        console.error('ntfy booking notification error', notifyError)
+      }
+
       return new Response(
         JSON.stringify({ success: true, payment_id: squareData.payment.id, card_id: cardId }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

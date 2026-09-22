@@ -59,6 +59,7 @@ export default function AdminDashboard() {
   const [settings, setSettings] = useState<BusinessSettings | null>(null)
   const [loading, setLoading] = useState(true)
   const [revenue, setRevenue] = useState(0)
+  const requestedBookingId = new URLSearchParams(location.search).get('booking')
 
   useEffect(() => {
     let mounted = true
@@ -86,6 +87,29 @@ export default function AdminDashboard() {
   }, [])
 
   useEffect(() => { if (authed) load() }, [authed, load])
+
+  // Deep links from internal notifications can open the exact booking card.
+  // Select the tab that contains the appointment, then pass its id to ApptList.
+  useEffect(() => {
+    if (!requestedBookingId || loading) return
+    const requested = appts.find((a) => a.id === requestedBookingId)
+    if (!requested) return
+
+    const now = new Date(); now.setHours(0, 0, 0, 0)
+    const next = new Date(now); next.setDate(next.getDate() + 1)
+    const nextEnd = new Date(next); nextEnd.setHours(23, 59, 59, 999)
+
+    if ((requested.services || []).some((s) => s.slug === 'quote')) {
+      setTab('quotes')
+    } else if (!requested.appointment_date && requested.deposit_paid) {
+      setTab('unscheduled')
+    } else if (requested.appointment_date) {
+      const date = new Date(requested.appointment_date)
+      if (date >= now && date < next) setTab('today')
+      else if (date >= next && date <= nextEnd) setTab('tomorrow')
+      else setTab('calendar')
+    }
+  }, [requestedBookingId, loading, appts])
 
   const signOut = () => {
     clearAdminSession()
@@ -145,10 +169,10 @@ export default function AdminDashboard() {
           <div className="flex items-center justify-center py-20"><div className="w-8 h-8 border-2 border-brand-blue border-t-transparent rounded-full animate-spin" /></div>
         ) : (
           <>
-            {tab === 'today' && <ApptList appts={todayAppts} title="Today's Jobs" settings={settings} pricingRules={pricingRules} allAppts={appts} onChange={load} />}
-            {tab === 'tomorrow' && <ApptList appts={tomorrowAppts} title="Tomorrow's Jobs" settings={settings} pricingRules={pricingRules} allAppts={appts} onChange={load} />}
-            {tab === 'unscheduled' && <ApptList appts={unscheduled} title="Booking List" emptyText="No customers waiting to be scheduled." settings={settings} pricingRules={pricingRules} allAppts={appts} onChange={load} />}
-            {tab === 'quotes' && <ApptList appts={quotes} title="Quote Requests" settings={settings} pricingRules={pricingRules} allAppts={appts} onChange={load} />}
+            {tab === 'today' && <ApptList appts={todayAppts} title="Today's Jobs" settings={settings} pricingRules={pricingRules} allAppts={appts} onChange={load} initialExpandedId={requestedBookingId} />}
+            {tab === 'tomorrow' && <ApptList appts={tomorrowAppts} title="Tomorrow's Jobs" settings={settings} pricingRules={pricingRules} allAppts={appts} onChange={load} initialExpandedId={requestedBookingId} />}
+            {tab === 'unscheduled' && <ApptList appts={unscheduled} title="Booking List" emptyText="No customers waiting to be scheduled." settings={settings} pricingRules={pricingRules} allAppts={appts} onChange={load} initialExpandedId={requestedBookingId} />}
+            {tab === 'quotes' && <ApptList appts={quotes} title="Quote Requests" settings={settings} pricingRules={pricingRules} allAppts={appts} onChange={load} initialExpandedId={requestedBookingId} />}
             {tab === 'revenue' && (
               <div>
                 <h2 className="text-2xl font-semibold text-white mb-6">Revenue Today</h2>
@@ -205,7 +229,7 @@ function buildGCalPayload(a: ApptRow, start: string, end: string) {
   }
 }
 
-function ApptList({ appts, title, emptyText, settings, pricingRules, allAppts, onChange }: {
+function ApptList({ appts, title, emptyText, settings, pricingRules, allAppts, onChange, initialExpandedId }: {
   appts: ApptRow[]
   title: string
   emptyText?: string
@@ -213,9 +237,17 @@ function ApptList({ appts, title, emptyText, settings, pricingRules, allAppts, o
   pricingRules: PricingRuleRow[]
   allAppts: ApptRow[]
   onChange: () => void
+  initialExpandedId?: string | null
 }) {
   const [schedulingId, setSchedulingId] = useState<string | null>(null)
-  const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [expandedId, setExpandedId] = useState<string | null>(initialExpandedId || null)
+
+  useEffect(() => {
+    if (initialExpandedId && appts.some((a) => a.id === initialExpandedId)) {
+      setExpandedId(initialExpandedId)
+      requestAnimationFrame(() => document.getElementById(`booking-${initialExpandedId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' }))
+    }
+  }, [initialExpandedId, appts])
 
   const schedulingAppt = appts.find((a) => a.id === schedulingId) || null
 
@@ -235,7 +267,7 @@ function ApptList({ appts, title, emptyText, settings, pricingRules, allAppts, o
       {appts.length === 0 ? <div className="card p-12 text-center text-brand-silver bg-card-gradient">{emptyText || 'No appointments here.'}</div> : (
         <div className="space-y-4">
           {appts.map((a) => (
-            <div key={a.id} className="card p-4 sm:p-6 bg-card-gradient">
+            <div key={a.id} id={`booking-${a.id}`} className="card p-4 sm:p-6 bg-card-gradient">
               <div className="flex items-start justify-between gap-3 cursor-pointer" onClick={() => setExpandedId(expandedId === a.id ? null : a.id)}>
                 <div className="flex-1">
                   <div className="flex items-center gap-2 sm:gap-3 mb-3 flex-wrap">
