@@ -821,8 +821,9 @@ Deno.serve(async (req: Request) => {
         })
 
         if (!ntfyRes.ok) {
+          const ntfyBody = await ntfyRes.text().catch(() => '')
           return new Response(
-            JSON.stringify({ error: 'ntfy notification failed', status: ntfyRes.status }),
+            JSON.stringify({ error: `ntfy failed (${ntfyRes.status}): ${ntfyBody.slice(0, 200)}` }),
             { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           )
         }
