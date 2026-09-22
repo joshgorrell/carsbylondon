@@ -90,7 +90,7 @@ Deno.serve(async (req: Request) => {
 
     if (type === 'review_request') {
       // Email to customer: please leave a review
-      const { customer_email, customer_name, vehicle, token_id, site_url } = payload
+      const { customer_email, customer_name, vehicle, token_id, site_url, google_review_url } = payload
 
       if (!customer_email) {
         return new Response(
@@ -100,6 +100,13 @@ Deno.serve(async (req: Request) => {
       }
 
       const reviewUrl = `${site_url}/review?token=${token_id}`
+      const googleButton = google_review_url
+        ? `<a href="${google_review_url}" target="_blank" rel="noopener noreferrer" style="background:#fff;color:#1a1a1a;text-decoration:none;padding:14px 32px;border-radius:6px;font-weight:bold;font-size:16px;display:inline-block;margin-left:8px;">Review on Google</a>`
+        : ''
+      const googleParagraph = google_review_url
+        ? `<p style="color:#ccc;margin-top:24px;">Prefer to leave a review on Google? We'd appreciate that too.</p>`
+        : ''
+
       const html = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #0a0a0a; color: #e5e5e5; padding: 32px; border-radius: 8px;">
           <h2 style="color: #2563eb; margin-bottom: 4px;">How Was Your Experience?</h2>
@@ -111,7 +118,9 @@ Deno.serve(async (req: Request) => {
               style="background: #2563eb; color: #fff; text-decoration: none; padding: 14px 32px; border-radius: 6px; font-weight: bold; font-size: 16px; display: inline-block;">
               Leave a Review
             </a>
+            ${googleButton}
           </div>
+          ${googleParagraph}
           <p style="color: #555; font-size: 12px; text-align: center;">This link is for one-time use only. If you have any questions, reply to this email.</p>
         </div>
       `

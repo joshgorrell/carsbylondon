@@ -61,4 +61,5 @@ export interface BusinessSettings {
   facebook_url: string | null; instagram_url: string | null
   facebook_visible: boolean; instagram_visible: boolean
   port_window_price: number
+  google_review_url: string | null
 }
