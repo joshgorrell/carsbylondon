@@ -187,7 +187,7 @@ Deno.serve(async (req: Request) => {
       // failure must never turn a successful Square payment into a failed checkout.
       try {
         const { data: booking } = await supabase.from('appointments')
-          .select('id, deposit_amount, customer:customers(first_name), vehicle:vehicles(year, make, model), services(name)')
+          .select('id, deposit_amount, vehicle:vehicles(year, make, model), services')
           .eq('id', appointment_id)
           .maybeSingle()
 
@@ -790,7 +790,7 @@ Deno.serve(async (req: Request) => {
 
       try {
         const { data: booking } = await supabase.from('appointments')
-          .select('id, deposit_amount, vehicle:vehicles(year, make, model), services(name)')
+          .select('id, deposit_amount, vehicle:vehicles(year, make, model), services')
           .eq('id', appointment_id)
           .maybeSingle()
 
