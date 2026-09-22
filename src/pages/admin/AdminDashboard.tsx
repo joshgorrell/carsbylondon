@@ -314,6 +314,8 @@ function ExpandedCard({ appt, settings, pricingRules, onSchedule, onChange }: {
   const [sendingReview, setSendingReview] = useState(false)
   const [reviewResult, setReviewResult] = useState<{ sent: boolean; error: string | null } | null>(null)
   const [showWorkOrder, setShowWorkOrder] = useState(false)
+  const [sendingNotify, setSendingNotify] = useState(false)
+  const [notifyResult, setNotifyResult] = useState<{ sent: boolean; error: string | null } | null>(null)
 
   const duration = getDurationForAppt(appt, pricingRules)
 
@@ -400,6 +402,30 @@ function ExpandedCard({ appt, settings, pricingRules, onSchedule, onChange }: {
           <button onClick={retryGCal} className="btn-secondary !text-xs !px-4 !py-2">Update Google Event</button>
         )}
         <button onClick={() => setShowWorkOrder(true)} className="btn-secondary !text-xs !px-4 !py-2">Work Order</button>
+        {appt.deposit_paid && (
+          <button
+            disabled={sendingNotify}
+            onClick={async () => {
+              setSendingNotify(true)
+              setNotifyResult(null)
+              try {
+                const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+                const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+                const res = await fetch(`${supabaseUrl}/functions/v1/square`, {
+                  method: 'POST',
+                  headers: { Authorization: `Bearer ${anonKey}`, 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ path: '/send-booking-notification', appointment_id: appt.id }),
+                })
+                const data = await res.json().catch(() => ({}))
+                setNotifyResult({ sent: !data.error, error: data.error || null })
+              } catch (e: any) {
+                setNotifyResult({ sent: false, error: e.message || 'Network error' })
+              }
+              setSendingNotify(false)
+            }}
+            className="btn-secondary !text-xs !px-4 !py-2"
+          >{sendingNotify ? 'Sending…' : 'Re-send Notification'}</button>
+        )}
         <a href={`mailto:${appt.customer?.email}`} className="btn-secondary !text-xs !px-4 !py-2">Email</a>
         <a href={`tel:${appt.customer?.phone}`} className="btn-secondary !text-xs !px-4 !py-2">Call</a>
       </div>
@@ -431,6 +457,12 @@ function ExpandedCard({ appt, settings, pricingRules, onSchedule, onChange }: {
       {reviewResult && (
         <div className={`p-3 rounded-lg text-sm ${reviewResult.sent ? 'bg-green-500/10 border border-green-500/30 text-green-400' : 'bg-red-500/10 border border-red-500/30 text-red-400'}`}>
           {reviewResult.sent ? 'Review request sent successfully.' : `Failed to send: ${reviewResult.error}`}
+        </div>
+      )}
+
+      {notifyResult && (
+        <div className={`p-3 rounded-lg text-sm ${notifyResult.sent ? 'bg-green-500/10 border border-green-500/30 text-green-400' : 'bg-red-500/10 border border-red-500/30 text-red-400'}`}>
+          {notifyResult.sent ? 'Booking notification sent.' : `Failed to send: ${notifyResult.error}`}
         </div>
       )}
 

@@ -778,6 +778,67 @@ Deno.serve(async (req: Request) => {
       )
     }
 
+    if (action === '/send-booking-notification' && req.method === 'POST') {
+      const { appointment_id } = body
+
+      if (!appointment_id) {
+        return new Response(
+          JSON.stringify({ error: 'Appointment ID is required' }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+
+      try {
+        const { data: booking } = await supabase.from('appointments')
+          .select('id, deposit_amount, vehicle:vehicles(year, make, model), services(name)')
+          .eq('id', appointment_id)
+          .maybeSingle()
+
+        if (!booking) {
+          return new Response(
+            JSON.stringify({ error: 'Booking not found' }),
+            { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        }
+
+        const vehicle = booking.vehicle
+          ? `${booking.vehicle.year} ${booking.vehicle.make} ${booking.vehicle.model}`
+          : 'Vehicle'
+        const services = (booking.services || []).map((service: any) => service.name).join(', ') || 'Service'
+        const deposit = ((booking.deposit_amount ?? 0) / 100).toFixed(2)
+        const adminUrl = `${Deno.env.get('SITE_URL') || 'https://carsbylondon.com'}/admin?booking=${encodeURIComponent(appointment_id)}`
+
+        const ntfyRes = await fetch('https://ntfy.sh/london-tint-bookings-site', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'text/plain; charset=utf-8',
+            'Title': 'New London Booking',
+            'Priority': 'high',
+            'Tags': 'car',
+            'Click': adminUrl,
+          },
+          body: `${vehicle}\n${services}\nDeposit: ${deposit} PAID ✓\nTap to view booking`,
+        })
+
+        if (!ntfyRes.ok) {
+          return new Response(
+            JSON.stringify({ error: 'ntfy notification failed', status: ntfyRes.status }),
+            { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        }
+
+        return new Response(
+          JSON.stringify({ success: true }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      } catch (notifyError: any) {
+        return new Response(
+          JSON.stringify({ error: notifyError.message || 'Failed to send notification' }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+    }
+
     return new Response(
       JSON.stringify({ error: 'Not found' }),
       { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
