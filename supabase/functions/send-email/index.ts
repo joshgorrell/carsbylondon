@@ -160,7 +160,7 @@ Deno.serve(async (req: Request) => {
         )
       }
 
-      const dashboardUrl = `${site_url}/admin?tab=deposits`
+      const dashboardUrl = `${site_url}/admin?booking=${encodeURIComponent(appointment_id)}`
       const html = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #0a0a0a; color: #e5e5e5; padding: 32px; border-radius: 8px;">
           <h2 style="color: #2563eb; margin-bottom: 4px;">New Booking Request</h2>
