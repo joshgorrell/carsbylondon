@@ -1,0 +1,162 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-brand-black text-white font-sans;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+  /* Prevent iOS zoom-on-focus for input fields */
+  @media (max-width: 640px) {
+    .input, input[type="text"], input[type="email"], input[type="tel"],
+    input[type="number"], input[type="password"], select, textarea {
+      font-size: 16px !important;
+    }
+  }
+  ::selection {
+    background: rgba(26, 53, 212, 0.4);
+    color: #fff;
+  }
+}
+
+@layer components {
+  /* ── Primary CTA: blue with glow ── */
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 px-8 py-4 rounded-md
+           bg-brand-blue text-white font-badge font-semibold tracking-widest uppercase text-sm
+           transition-all duration-300
+           hover:bg-brand-blue-hover shadow-blue-glow-sm hover:shadow-blue-glow
+           active:scale-[0.97] select-none;
+  }
+  .btn-primary:disabled,
+  .btn-primary[disabled] {
+    @apply opacity-40 cursor-not-allowed pointer-events-none shadow-none;
+  }
+
+  /* ── Secondary: chrome-border ghost ── */
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 px-8 py-4 rounded-md
+           border border-brand-border bg-brand-card/60 text-brand-chrome
+           font-badge font-semibold tracking-widest uppercase text-sm
+           transition-all duration-300
+           hover:border-brand-blue/60 hover:bg-brand-card hover:text-white
+           active:scale-[0.97] select-none;
+  }
+
+  /* ── Ghost nav link ── */
+  .btn-ghost {
+    @apply inline-flex items-center gap-1 font-badge font-semibold tracking-wider uppercase text-sm
+           text-brand-silver transition-colors hover:text-brand-chrome;
+  }
+
+  /* ── Card ── */
+  .card {
+    @apply bg-brand-card border border-brand-border rounded-xl overflow-hidden
+           transition-all duration-300;
+  }
+  .card-hover {
+    @apply hover:border-brand-blue/50 hover:shadow-[0_6px_32px_rgba(26,53,212,0.22)] hover:-translate-y-0.5;
+  }
+
+  /* ── Form input ── */
+  .input {
+    @apply w-full px-4 py-3 rounded-md bg-brand-muted/60 border border-brand-border
+           text-white placeholder-brand-silver-dark text-sm
+           transition-colors focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue/50;
+  }
+
+  /* ── Section heading ── */
+  .section-heading {
+    @apply font-display text-5xl md:text-7xl tracking-wide text-white uppercase leading-none;
+  }
+
+  /* ── Chrome text effect (logo-inspired) ── */
+  .text-chrome {
+    background: linear-gradient(180deg, #ffffff 0%, #c8d4e0 30%, #8a9ab0 55%, #c8d4e0 80%, #ffffff 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* ── Logo emblem (boxed brand mark) ── */
+  .logo-emblem {
+    @apply relative flex items-center gap-3 px-4 py-2 border border-brand-silver-dark/40 rounded-md
+           bg-brand-card/40 backdrop-blur-sm
+           transition-all duration-300;
+  }
+  .logo-emblem::before {
+    content: '';
+    @apply absolute -top-px left-3 right-3 h-[2px] bg-brand-blue;
+  }
+  .logo-emblem:hover {
+    @apply border-brand-silver/60 bg-brand-card/70;
+  }
+
+  /* ── Blue accent stripe ── */
+  .stripe-blue {
+    @apply relative after:absolute after:bottom-0 after:left-0 after:h-[3px] after:w-full after:bg-brand-blue;
+  }
+
+  /* ── Eyebrow label ── */
+  .eyebrow {
+    @apply font-badge font-semibold text-xs tracking-[0.25em] uppercase text-brand-blue;
+  }
+
+  /* ── Status badge ── */
+  .badge-confirmed { @apply bg-green-500/15 text-green-400 border border-green-500/30; }
+  .badge-pending   { @apply bg-yellow-500/15 text-yellow-400 border border-yellow-500/30; }
+  .badge-completed { @apply bg-brand-blue/15 text-blue-300 border border-brand-blue/30; }
+  .badge-cancelled { @apply bg-red-500/15 text-red-400 border border-red-500/30; }
+}
+
+@layer utilities {
+  .text-balance { text-wrap: balance; }
+  .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+  .scrollbar-hide::-webkit-scrollbar { display: none; }
+
+  /* Print: clean black-on-white work order on letter paper */
+  @media print {
+    @page { size: letter; margin: 0.75in; }
+    html, body { background: #fff !important; }
+    body * { visibility: hidden !important; }
+    .print\:block, .print\:block * { visibility: visible !important; }
+    .print\:block {
+      position: absolute; left: 0; top: 0; width: 100%;
+      background: #fff !important; color: #000 !important;
+      padding: 0 !important; margin: 0 !important;
+      border: none !important; border-radius: 0 !important;
+      box-shadow: none !important;
+    }
+    .print\:hidden { display: none !important; }
+    .print\:block * {
+      background: #fff !important; color: #000 !important;
+      border-color: #ccc !important;
+      box-shadow: none !important;
+      text-shadow: none !important;
+    }
+    .print\:block img { display: none !important; }
+    .print\:block .print-heading { font-size: 20pt; font-weight: bold; }
+    .print\:block .print-sub { font-size: 9pt; color: #555 !important; }
+    .print\:block .print-label { font-size: 8pt; color: #666 !important; text-transform: uppercase; letter-spacing: 0.05em; }
+    .print\:block .print-value { font-size: 11pt; color: #000 !important; }
+    .print\:block .print-total { font-size: 12pt; font-weight: bold; }
+    .print\:block .print-border-b { border-bottom: 1px solid #999 !important; }
+    .print\:block .print-border-t { border-top: 1px solid #999 !important; }
+    .print\:block .print-border { border: 1px solid #ccc !important; }
+  }
+
+  /* Matte dark grain for depth */
+  .bg-grain {
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    background-repeat: repeat;
+    background-size: 128px;
+  }
+}
